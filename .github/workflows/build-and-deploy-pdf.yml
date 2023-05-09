@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  FILE_NAME: "GithubLatexTemplate"
+  FILE_NAME: "SecureAzureOIDC"
 
 jobs:
   build-pdf:
