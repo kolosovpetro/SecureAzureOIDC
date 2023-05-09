@@ -1,8 +1,5 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
-title: LaTeX Template for Github
+title: Secure Open ID Connect implementation using Azure
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -15,5 +12,5 @@ authors:
 identifiers:
   - type: url
     value: >-
-      https://github.com/kolosovpetro/github-latex-template
-    description: LaTeX Template for Github Source files
+      https://github.com/kolosovpetro/SecureAzureOIDC
+    description: In this manuscript secure Open ID Connect implementation using Azure is discussed

@@ -1,9 +1,6 @@
-# GitHub LaTeX Template
+# Secure Open ID Connect implementation using Azure
 
-[![Build PDF](https://github.com/kolosovpetro/github-latex-template/actions/workflows/build-pdf.yml/badge.svg)](https://github.com/kolosovpetro/github-latex-template/actions/workflows/build.yml/badge.svg)
-[![Build and Deploy PDF](https://github.com/kolosovpetro/github-latex-template/actions/workflows/build-and-deploy-pdf.yml/badge.svg)](https://github.com/kolosovpetro/github-latex-template/actions/workflows/build-and-deploy.yml/badge.svg)
-
-LaTeX template for GitHub including general CI/CD actions and Mathematica templates.
+In this manuscript secure Open ID Connect implementation using Azure is discussed
 
 ## Build and run in Intellij IDEA
 
@@ -22,14 +19,6 @@ LaTeX template for GitHub including general CI/CD actions and Mathematica templa
 - Configure Inverse Search in `Intellij IDEA` for SumatraPDF: `Tools -> LaTeX -> Configure Inverse Search`
 - Compile document using `Shift + F10`
 
-## How to use Mathematica package
-
-- Open the package file `GithubLatexTemplateMathematicaPackage.m` in Wolfram Mathematica, I use version 13.0
-- Execute the package using `Shift+Enter`
-- Open the notebook file `GithubLatexTemplateMathematicaNotebook.nb`
-- Execute the line: `Needs["GithubLatexTemplateMathematicaPackage"]`
-- Continue your work as desired
-
 ## Configure CI / CD
 
 Set repository secrets
@@ -42,16 +31,3 @@ Set repository secrets
 - `build-pdf.yml` builds project using `TeXLive`. Triggered on `pull_request`, `push` to `develop` branch
 - `build-and-deploy-pdf.yml` builds project using `TeXLive` and deploys to `GitHub Pages`. Triggered on `push` to `main`
   branch
-
-## Template example
-
-Compiled document looks like as follows
-
-<p align="center">
-  <img src="img/template_example.PNG" alt="template_example"/>
-  <img src="img/template_example2.PNG" alt="template_example"/>
-</p>
-
-## License
-
-This work is licensed under [Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode) license
