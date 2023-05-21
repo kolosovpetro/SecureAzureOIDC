@@ -1,7 +1,7 @@
 In this manuscript we discuss the problem of secure storage and transfer of access tokens between microservices.
 
-Web browser may store access tokens in two different ways such that storage of an access tokens
-in local storage and storage of access tokens in cookie files.
+Web browser may store access tokens in two different ways such that storage of the access tokens
+in local storage and storage of the access tokens in cookie files.
 
 Local storage is a web browser mechanism that allows web applications to store data locally on the user's device.
 It is important to note that Local storage is vulnerable to Cross Site Scripting (XSS) attacks.
@@ -37,8 +37,8 @@ return this.httpClient.post<TokensResponse>(this.baseUrl + this.sessionsRoute, c
 
 Note that cookie files are vulnerable to Cross-Site Request Forgery (CSRF) attacks.
 Cross-Site Request Forgery (CSRF) - is attack such that redirects user to the resource where user has active session.
-It means that attacker could perform requests to resources on behalf of user.
-Main idea of Cross-Site Request Forgery (CSRF) attack is illustrated as follows
+It means that attacker could perform requests to resources on behalf of the user.
+The main idea of Cross-Site Request Forgery (CSRF) attack is illustrated as follows
 
 ** DIAGRAM Cross-Site Request Forgery (CSRF) **
 
@@ -53,4 +53,4 @@ These methods are GET, HEAD, OPTIONS and TRACE.
 Cookies will only be transferred within same domain.
 
 Therefore, SameSite settings values as Lax and Strict protect user from a CSRF attack because they block
-submission of cookies with unsecure HTTP methods and cross domain requests.
+submission of cookies using unsecure HTTP methods and cross domain requests.
