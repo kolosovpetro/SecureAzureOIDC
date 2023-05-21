@@ -1,0 +1,56 @@
+In this manuscript we discuss the problem of secure storage and transfer of access tokens between microservices.
+
+Web browser may store access tokens in two different ways such that storage of the access tokens
+in local storage and storage of the access tokens in cookie files.
+
+Local storage is a web browser mechanism that allows web applications to store data locally on the user's device.
+It is important to note that Local storage is vulnerable to Cross Site Scripting (XSS) attacks.
+
+Cross Site Scripting (XSS) is a type of attack such that malicious JavaScript code is injected into a html-page
+to access user's sensitive data, for example access tokens.
+
+Cross Site Scripting (XSS) attacks may be divided by following groups:
+
+1. Reflected XSS is a type of attack in which a malicious
+the script is passed to the web server via URL or form parameters and then returned back to the page's html code
+without proper filtering or escaping. If the user opens the page, then the script is executed
+in the browser, which can lead to the loss of sensitive data, such as access tokens.
+2. Stored XSS is a type of attack in which a malicious script is stored on the server, for example
+in the database and displayed on web pages. The script is executed in users' browsers,
+requesting pages with malicious code.
+3. XSS in the DOM is a type of attack such that a malicious script modifies the DOM tree of a web page,
+running in the user's browser. In most cases, based on modifying the URL string.
+
+Another way to store credentials is to store them in cookie files.
+Cookies are small pieces of data sent by web server and stored on user's device.
+Storing access tokens in cookies eliminates potential XSS attacks since that HttpOnly setting
+makes impossible to read cookies using JavaScript code.
+Having credentials stored in cookies, HTTP request is performed via JavaScript.
+If the object { withCredentials: true } provided and auth cookies exist, then auth cookies are attached to request,
+but cannot be accessed from JS code anyway.
+
+Example of such request in TypeScript
+
+return this.httpClient.post<TokensResponse>(this.baseUrl + this.sessionsRoute, command, {
+      withCredentials: true
+});
+
+Note that cookie files are vulnerable to Cross-Site Request Forgery (CSRF) attacks.
+Cross-Site Request Forgery (CSRF) - is attack such that redirects user to the resource where user has active session.
+It means that attacker could perform requests to resources on behalf of the user.
+The main idea of Cross-Site Request Forgery (CSRF) attack is illustrated as follows
+
+** DIAGRAM Cross-Site Request Forgery (CSRF) **
+
+Cookie files provided with SameSite setting that determines whether cookies will be sent along with cross domain requests.
+
+SameSite setting could have one of the states below:
+
+1. None - no restrictions are imposed on the transfer of cookies.
+2. Lax - allows cookie transmission only by secure HTTP methods according to RFC 7231 (link to literature here).
+These methods are GET, HEAD, OPTIONS and TRACE.
+3. Strict - blocks cookies from being sent with any requests from third-party resources.
+Cookies will only be transferred within same domain.
+
+Therefore, SameSite settings values as Lax and Strict protect user from a CSRF attack because they block
+submission of cookies using unsecure HTTP methods and cross domain requests.
