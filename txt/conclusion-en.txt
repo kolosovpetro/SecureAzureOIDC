@@ -1,10 +1,10 @@
 Conclusion.
 
-In this manuscript we explore the problem of secure storage and transfer of access tokens between microservices was considered.
+In this manuscript we explore the problem of secure storage and transfer of access tokens between microservices.
 Particular attention was paid to possible vulnerabilities during transfer of access tokens such
 as Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF).
 
-To eliminate these vulnerabilities, it is necessary to store authorization tokens in cookies, with mandatory
+To eliminate these vulnerabilities, it is necessary to store authorization tokens in cookies with mandatory
 HttpOnly and SameSite settings such that SameSite values should be Lax or Strict.
 Therefore, cookies are either transmitted via secure HTTP methods or not transmitted at all.
 
