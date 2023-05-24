@@ -1,0 +1,26 @@
+Conclusion.
+
+In this article, the problem of secure storage and transfer of access tokens between microservices was considered.
+Particular attention was paid to possible vulnerabilities such as Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF).
+
+To eliminate these vulnerabilities, it is necessary to store authorization tokens in cookies, with mandatory
+HttpOnly and SameSite settings so SameSite values should be Lax or Strict,
+thus, cookies are either transmitted to secure HTTP methods or not transmitted at all.
+
+User authentication occurs via the Open ID Connect protocol (link to RFC) via the Authorization code flow with PKCE (link to RFC).
+The principle of operation of the Open ID Connect protocol and Authorization code flow with PKCE is described in more detail in Chapter 2.
+
+Also, an authentication / authorization mechanism based on the ASP.NET Web API backend and Angular frontend application was proposed in the work.
+under a single domain. This eliminates the need to transfer authorization cookies to resources under other domains.
+The transfer of an access token to microservices occurs using Reverse Proxy YARP (link to docs), so that
+the access token is automatically substituted in the request header.
+
+In addition, the work proposed a mechanism for updating the access token through the implementation of Ticket Store (link to docs) and Hosted Service (link to docs).
+Thus, the Ticket Store is responsible for checking each request for access token expiration.
+In case of expiration of the access token, the access token is updated with a request to the endpoint of the authorization service.
+It is also the task of the Ticket Store to store the access token and the refresh token,
+which are part of the Authentication Ticket.
+The Hosted Service is needed to refresh expiring access tokens in the background to keep user sessions active.
+
+In the article, we solved the problem of securely storing an access token and passing it between microservices,
+and also offered solutions to identified vulnerabilities such as Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF).
