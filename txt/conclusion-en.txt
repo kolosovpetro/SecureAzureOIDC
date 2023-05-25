@@ -1,0 +1,27 @@
+Conclusion.
+
+In this manuscript we explore the problem of secure storage and transfer of access tokens between microservices.
+Particular attention was paid to possible vulnerabilities during transfer of access tokens such
+as Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF).
+
+To eliminate these vulnerabilities, it is necessary to store authorization tokens in cookies with mandatory
+HttpOnly and SameSite settings such that SameSite values should be Lax or Strict.
+Therefore, cookies are either transmitted via secure HTTP methods or not transmitted at all.
+
+User authentication to be implemented using the OIDC protocol (link to RFC) in couple with Authorization code flow with PKCE (link to RFC).
+The main principle of the OIDC protocol is described more detailed in Chapter 2.
+
+Also, we provide an authentication / authorization implementation based on the ASP.NET Core Web API backend and Angular
+frontend application.
+These apps are stored under single domain to eliminate necessity to transfer authorization cookies cross domain way.
+The transfer of access tokens to microservices is implemented using Reverse Proxy YARP (link to docs) so that
+the access token is automatically substituted in the request header.
+
+In addition, we proposed a mechanism to refresh an access token through the Ticket Store (link to docs) entity
+and Hosted Service (link to docs).
+Therefore, the Ticket Store checks each request for access token expiration.
+In case of expiration of the access token, the access token is refreshed by means of authorization microservice.
+Ticket store also stores the pair of the access and refresh token inside AuthenticationTicket entity (link to docs).
+
+Finally, in this manuscript we proposed a solution to the problem of securely storing an access token and passing it between microservices,
+eliminating the Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF) vulnerabilities.

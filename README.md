@@ -1,6 +1,11 @@
-# Secure Open ID Connect implementation using Azure
+# Secure OIDC implementation using Azure AD and ASP .NET Framework
 
-In this manuscript secure Open ID Connect implementation using Azure is discussed
+[![Build PDF](https://github.com/kolosovpetro/SecureAzureOIDC/actions/workflows/build-pdf.yml/badge.svg)](https://github.com/kolosovpetro/SecureAzureOIDC/actions/workflows/build-pdf.yml)
+
+In this manuscript we discuss the problem of secure storage and transfer of access tokens between microservices.
+Web browser may store access tokens both, in local storage or in cookie files.
+We propose a secure implementation to store and transfer auth cookies between microservices
+using Azure Active Directory, OpenID Connect and ASP .NET Web Framework.
 
 ## Build and run in Intellij IDEA
 
