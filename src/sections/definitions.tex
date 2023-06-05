@@ -1,0 +1,13 @@
+\begin{itemize}
+    \item \textbf{Access Token} -- is data used to authenticate to a protected resource.
+    Mostly often the access token is in JWT-format constructed of several
+    consecutive parts separated by dots.
+    Each part is Base64-encoded.
+    \item \textbf{Refresh Token} -- is data used to obtain a new access token when the current access token becomes invalid or expires.
+    Refresh tokens are issued to the client by the authorization server.
+    \item \textbf{Resource Owner} -- is the entity capable to provide authorization to a protected resource.
+    When the resource owner is a person, this person is called an end user.
+    \item \textbf{Resource Server} -- is a server that stores protected resources and can only be accessed after validation of access token.
+    \item \textbf{Client} -- is an application that accesses protected resources.
+    \item \textbf{Authorization Server} -- is the server that issues access tokens to the client after successful authentication.
+\end{itemize}
