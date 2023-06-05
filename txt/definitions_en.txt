@@ -1,0 +1,15 @@
+====Definitions====
+
+Access Token is data used to authenticate to a protected resource. Most often the access token is in JWT-format, that is, in the form of several 
+consecutive parts, separated by dots. Each part contains a base64url-encoded value.
+
+Refresh Token is data used to get new access tokens when the current access token becomes invalid or expires. Refresh tokens are issued to the client by 
+the authorization server.
+
+Resource Owner is the entity capable of presenting authorization to access a protected resource. When the resource owner is a person, it is called an end user.
+
+A Resource Server is a server that stores protected resources and can only process requests to those resources after checking for the appropriate access token.
+
+Client is an application that makes requests to protected resources.
+
+Authorization Server is the server that issues access tokens to the client after successful authentication.
