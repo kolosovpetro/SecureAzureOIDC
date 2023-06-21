@@ -1,29 +1,108 @@
 ====Refresh token flow====
 
-В базе данных каждая сессия хранится в виде сущности UserSessionEntity. В свойстве Value типа byte[] лежит сериализованный
-с помощью 
-объект типа AuthenticationTicket, в котором лежит токен обновления (а так же токен доступа и идентификатор пользователя, коим
-является наше свойство Id).
-
-public class UserSessionEntity
-{
-    public Guid Id { get; private set; }
-    public DateTimeOffset CreatedAt { get; set; }
-    public DateTimeOffset ExpiresAt { get; set; }
-    public DateTimeOffset UpdatedAt { get; set; }
-    public DateTimeOffset DateOfLastAccess { get; set; }
-    public byte[] Value { get; set; }
-}
-
 Реализация обновления токенов пользователей крайне проста. Нам нужно создать фоновый сервис, который будет каждые несколько
-минут выбирать из базы данных те сессии, которые скоро истекут, затем фоновый сервис должен десериализовать объект 
+минут выбирать из базы данных те сессии, которые скоро истекут, затем фоновый сервис должен десериализовать объект
 AuthenticationTicket у каждой найденой найденой сессии, из десериализованного объекта сервис возьмет токен обновления и отправит
 запрос на сервер авторизации с целью получения новых токенов доступа и обновления. Новые токены заменяют старые в объекте AuthenticationTicket,
-после чего объект нужно заного десериализовать и установить уже десериализованный объект в свойство Value. Кроме того, в ответе 
-авторизационного сервера в поле ExpiresIn будет число, которое говорит о том через какое время (в секундах) истечет токен доступа, фоновый 
+после чего объект нужно заного десериализовать и установить уже десериализованный объект в свойство Value. Кроме того, в ответе
+авторизационного сервера в поле ExpiresIn будет число, которое говорит о том через какое время (в секундах) истечет токен доступа, фоновый
 сервис должен обновить свойство ExpiresAt у объекта UserSessionEntity, добавив к текущему времени полученные секунды.
 
 Помимо обновления пользовательских сессий, фоновый сервис отвечает за удалений сессий, которые долго не использовались.
 Каждые несколько минут выбираются сессии, их свойства DateOfLastAccess сравнивается с текущем временем, в случае если разница
-между двумя датами больше 3 суток - сессия удаляется. Каждый раз когда пользователь совершает действие на сайте, свойство 
+между двумя датами больше 3 суток - сессия удаляется. Каждый раз когда пользователь совершает действие на сайте, свойство
 DateOfLastAccess обновляется.
+
+Реализация фонового сервиса:
+
+public class RefreshBackgroundService : IHostedService
+{
+    private readonly DatabaseContext _context;
+    private readonly TicketStore _ticketStore;
+
+    public RefreshBackgroundService(DatabaseContext context, TicketStore ticketStore)
+    {
+        _context = context;
+        _ticketStore = ticketStore;
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        var _ = StartRefreshingUserSessionsAsync(cancellationToken);
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    private async Task StartRefreshingUserSessionsAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var expiringUserSessions = await _context.UserSessions
+                .Where(x => (x.ExpiresAt > DateTimeOffset.UtcNow &&
+                             x.ExpiresAt < DateTimeOffset.UtcNow.AddMinutes(5)) ||
+                            x.ExpiresAt < DateTimeOffset.UtcNow)
+                .ToListAsync(cancellationToken);
+
+            foreach (var userSession in expiringUserSessions)
+            {
+                var differenceBetweenLastAccessAndUtcNow = userSession.DateOfLastAccess
+                    .Subtract(DateTimeOffset.UtcNow)
+                    .Duration();
+
+                if (differenceBetweenLastAccessAndUtcNow > TimeSpan.FromDays(3))
+                {
+                    await _ticketStore.RemoveAsync(userSession.Id.ToString());
+                    continue;
+                }
+
+                await _ticketStore.RenewAsync(userSession.Id.ToString(), null);
+            }
+
+            await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+        }
+    }
+}
+
+Метод расширения, конфигурирующий фоновый сервис:
+
+public static class HostedServicesDependencyInjection
+{
+    public static IServiceCollection AddHostedServices(this IServiceCollection serviceCollection)
+    {
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        var configuration = serviceProvider.GetService<IConfiguration>();
+        var databaseContext = serviceProvider.GetService<DatabaseContext>();
+        var memoryCache = serviceProvider.GetService<IMemoryCache>();
+
+        var tickerSerializer = new TicketSerializer();
+        var httpClient = new HttpClient();
+
+        var azAdSection = configuration.GetSection(AppSettingsConstants.AzureAdSelection);
+        var azureAdConfiguration = azAdSection.Get<AzureAdConfiguration>();
+        var adClientSecret = Environment.GetEnvironmentVariable(AppSettingsConstants.AdSecretKey);
+        azureAdConfiguration.ClientSecret = adClientSecret;
+
+        var tickerStore = new TicketStore(
+            databaseContext,
+            tickerSerializer,
+            httpClient,
+            azureAdConfiguration,
+            memoryCache);
+
+        var refreshBackgroundService = new RefreshBackgroundService(databaseContext, tickerStore);
+
+        serviceCollection.AddHostedService(_ => refreshBackgroundService);
+
+        return serviceCollection;
+    }
+}
+
+Вызов метода расширения в Program.cs:
+
+builder.Services.AddHostedServices();
