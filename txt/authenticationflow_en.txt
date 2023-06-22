@@ -1,16 +1,16 @@
-Как уже ранее говорилось, авторизация происходит посредством получения токенов доступа и обновления. Теперь стоит обсудить
-как происходит аутентификация на платформе .Net Core. Рассмотрим её на примере диаграммы.
+As previously mentioned, authorization is done by obtaining access tokens and upgrades. It is now worth discussing how authentication works 
+on the .Net Core platform. Let's look at it using a diagram as an example.
 
-1. Когда пользователь открывает в браузере фронтенд приложение, отправляется запрос на эндпоинт 
-https://localhost:4200/api/isAuth, который проверяет куки пользователя и сообщает авторизован ли пользователь или нет.
+1. When the user opens a frontend application in the browser, a request is sent to the endpoint https://localhost:4200/api/isAuth, 
+which checks the user's cookies and informs whether the user is authorized or not.
 
-2. В случае если пользователь авторизован - сервер дает понять это отправляя обратно true, иначе false.
+2. If the user is authorized - the server lets you know this by sending back true, otherwise false.
 
-3. В Angular приложение прописана логика, отвечающая за перенаправление пользователя на эндпоинт https://localhost:4200/login
-если пользователь не авторизован.
+3. In the Angular application, there is logic responsible for redirecting the user to the endpoint https://localhost:4200/login 
+if the user is not authorized.
 
-4. В свою очередь метод Login перенаправляет пользователя на ендпоинт авторизации. Важно уточнить, чтобы получить некоторую
-информацию о профиле конечного пользователя, мы должны вписать "openid" в scope. Пример:
+4. In turn, the Login method redirects the user to the authorization endpoint. It is important to clarify that in order to get some 
+information about the profile of the end user, we have to put "openid" in scope. Example:
 
 serviceCollection
     .AddAuthentication(options => {...})
@@ -21,11 +21,10 @@ serviceCollection
         options.Scope.Add("openid");
     });
 
-5. Если сервер авторизации успешно аутентифицировал пользователя, он перенаправляется на эндпоинт https://localhost:4200,
-уже с установленными куки. На этом моменте в дело включается TickerStore, суть которого в управление пользовательскими сессиями.
-В базе данных каждая сессия хранится в виде сущности UserSessionEntity. В свойстве Value типа byte[] лежит сериализованный
-с помощью объект типа AuthenticationTicket, в котором лежит токен обновления (а так же токен доступа и идентификатор пользователя, коим
-является наше свойство Id).
+5. If the authentication server has successfully authenticated the user, he is redirected to the endpoint https://localhost:4200, with 
+cookies already set. At this point, the TickerStore comes into play, which is all about managing user sessions. In the database, each 
+session is stored as a UserSessionEntity entity. The Value property of byte[] type contains serialized AuthenticationTicket object, 
+which contains refresh token (as well as access token and user ID, which is our Id property).
 
 public class UserSessionEntity
 {
@@ -37,15 +36,15 @@ public class UserSessionEntity
     public byte[] Value { get; set; }
 }
 
-TickerStore реализует интерфейс ITickerStore, предлагающий реализовать 4 метода: StoreAsync, RenewAsync, RetrieveAsync, RemoveAsync.
+TickerStore implements ITickerStore interface, which offers 4 methods: StoreAsync, RenewAsync, RetrieveAsync, RemoveAsync.
 
-Метод StoreAsync выполняется сразу после аутентификации на сервере авторизации, он сохраняет пользовательскую сессию в базе данных.
-Метод RenewAsync в нашем случае используется фоновым сервисом RefreshBackgroundService для того чтобы обновлять пользовательские сессии.
-Метод RetrieveAsync выполняется каждый раз когда отправляется запрос на эндпоинт помеченный атрибутом [Authorize].
-Метод RemoveAsync выполняется когда браузерная кука истекла, а так же используется тем же RefreshBackgroundService для удаление
-сессий, которыми давно никто не пользовался.
+The StoreAsync method is executed immediately after authentication on the authentication server, it saves the user session in the database.
+The RenewAsync method in our case is used by the background service RefreshBackgroundService to update user sessions.
+The RetrieveAsync method is executed every time a request is sent to the endpoint marked with the [Authorize] attribute.
+The RemoveAsync method is executed when the browser cookie has expired, as well as is used by the same RefreshBackgroundService 
+to remove sessions which have not been used for a long time.
 
-Пример реализации TickerStore:
+Example TickerStore implementation:
 
 public class TicketStore : ITicketStore
 {
@@ -79,38 +78,38 @@ public class TicketStore : ITicketStore
         var idToken = ticket.Properties.GetTokenValue(TokenTypes.IdentityToken);
         var accessToken = ticket.Properties.GetTokenValue(TokenTypes.AccessToken);
         var refreshToken = ticket.Properties.GetTokenValue(TokenTypes.RefreshToken);
-
+        
         var handler = new JwtSecurityTokenHandler();
         var decodeToken = handler.ReadToken(idToken) as JwtSecurityToken;
         var ticketExpiresUtc = ticket.Properties.ExpiresUtc;
-
+        
         if (decodeToken == null)
         {
             throw new StoreException("Read token error");
         }
-
+        
         if (ticketExpiresUtc.HasValue == false)
         {
             throw new StoreException("Ticket ExpiresUtc value does not exist");
         }
-
+        
         var sessionId = decodeToken.Claims.First(x => x.Type == ClaimsConstants.Sid).Value;
         var userSession = await _context.UserSessions.FirstOrDefaultAsync(x => x.Id == new Guid(sessionId));
 
         if (userSession != null)
         {
             var deserializedTicket = _ticketSerializer.Deserialize(userSession.Value);
-
+            
             if (deserializedTicket == null)
             {
                 throw new StoreException("Deserialization ticket error");
             }
-
+            
             if (accessToken == null || refreshToken == null || idToken == null)
             {
                 throw new StoreException("Access token, refresh token, identity token are not existing");
             }
-
+            
             deserializedTicket.Properties.UpdateTokenValue(TokenTypes.AccessToken, accessToken);
             deserializedTicket.Properties.UpdateTokenValue(TokenTypes.RefreshToken, refreshToken);
             deserializedTicket.Properties.UpdateTokenValue(TokenTypes.IdentityToken, idToken);
@@ -122,22 +121,22 @@ public class TicketStore : ITicketStore
 
             _context.UserSessions.Update(userSession);
             await _context.SaveChangesAsync();
-
+            
             _memoryCache.Set(sessionId, ticket, _memoryCacheEntryOptions);
         }
-
+        
         if (userSession == null)
         {
             var serializedTicket = _ticketSerializer.Serialize(ticket);
-
+            
             var newUserSession = new UserSessionEntity(new Guid(sessionId), ticketExpiresUtc.Value, serializedTicket);
 
             _context.UserSessions.Add(newUserSession);
             await _context.SaveChangesAsync();
-
+            
             _memoryCache.Set(sessionId, ticket, _memoryCacheEntryOptions);
         }
-
+        
         return sessionId;
     }
 
@@ -149,33 +148,33 @@ public class TicketStore : ITicketStore
         {
             throw new StoreException("UserSession does not exist");
         }
-
+        
         var deserializedTicket = _ticketSerializer.Deserialize(userSession.Value);
 
         if (deserializedTicket == null)
         {
             throw new StoreException("Deserialization ticket error");
         }
-
+        
         var refreshToken = deserializedTicket.Properties.GetTokenValue(TokenTypes.RefreshToken);
 
         var response = await RequestRefreshTokenAsync(refreshToken);
-
+            
         if (response.AccessToken == null || response.RefreshToken == null || response.IdentityToken == null)
         {
             await RemoveAsync(key);
             return;
         }
-
+            
         deserializedTicket.Properties.UpdateTokenValue(TokenTypes.AccessToken, response.AccessToken);
         deserializedTicket.Properties.UpdateTokenValue(TokenTypes.RefreshToken, response.RefreshToken);
         deserializedTicket.Properties.UpdateTokenValue(TokenTypes.IdentityToken, response.IdentityToken);
-
+            
         var serializedTicket = _ticketSerializer.Serialize(deserializedTicket);
-
+            
         userSession.UpdateValue(serializedTicket);
         userSession.UpdateExpiresAt(userSession.ExpiresAt.AddSeconds(response.ExpiresIn));
-
+            
         _context.UserSessions.Update(userSession);
         await _context.SaveChangesAsync();
     }
@@ -183,12 +182,12 @@ public class TicketStore : ITicketStore
     public async Task<AuthenticationTicket> RetrieveAsync(string key)
     {
         var isMemoryCacheTicketExist = _memoryCache.TryGetValue(key, out AuthenticationTicket memoryCacheTicket);
-
+        
         if (isMemoryCacheTicketExist)
         {
             return memoryCacheTicket;
         }
-
+        
         var userSession = await _context.UserSessions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == new Guid(key));
 
         if (userSession == null)
@@ -197,7 +196,7 @@ public class TicketStore : ITicketStore
         }
 
         var deserializedTicket = _ticketSerializer.Deserialize(userSession.Value);
-
+        
         if (deserializedTicket == null)
         {
             throw new StoreException("Deserialization ticket error");
@@ -211,7 +210,7 @@ public class TicketStore : ITicketStore
             {
                 throw new StoreException("Refresh token does not exist");
             }
-
+            
             var response = await RequestRefreshTokenAsync(refreshToken);
 
             if (response.AccessToken == null || response.RefreshToken == null || response.IdentityToken == null)
@@ -219,33 +218,33 @@ public class TicketStore : ITicketStore
                 await RemoveAsync(key);
                 return null;
             }
-
+            
             deserializedTicket.Properties.UpdateTokenValue(TokenTypes.AccessToken, response.AccessToken);
             deserializedTicket.Properties.UpdateTokenValue(TokenTypes.RefreshToken, response.RefreshToken);
             deserializedTicket.Properties.UpdateTokenValue(TokenTypes.IdentityToken, response.IdentityToken);
-
+            
             var serializedTicket = _ticketSerializer.Serialize(deserializedTicket);
-
+        
             userSession.UpdateValue(serializedTicket);
             userSession.UpdateExpiresAt(DateTimeOffset.UtcNow.AddSeconds(response.ExpiresIn));
         }
-
+        
         userSession.UpdateDateOfLastAccess();
         _context.UserSessions.Update(userSession);
-
+        
         await _context.SaveChangesAsync();
-
+            
         _memoryCache.Set(key, deserializedTicket, _memoryCacheEntryOptions);
-
+        
         return deserializedTicket;
     }
 
     public async Task RemoveAsync(string key)
     {
         var userSession = await _context.UserSessions.FirstAsync(x => x.Id == new Guid(key));
-
+        
         if (userSession == null) return;
-
+        
         _context.UserSessions.Remove(userSession);
         await _context.SaveChangesAsync();
     }
@@ -261,34 +260,34 @@ public class TicketStore : ITicketStore
             Scope = _azureAdConfiguration.Scopes,
             RefreshToken = refreshToken
         };
-
+        
         var response = await _httpClient.RequestRefreshTokenAsync(refreshTokenRequest);
 
         return response;
     }
 }
 
-Ниже метод расширения, конфигурирующий TickerStore:
+Below is the extension method that configures the TickerStore:
 
 public static class TicketStoreDependencyInjection
 {
     public static IServiceCollection AddTicketStore(this IServiceCollection serviceCollection)
     {
         var serviceProvider = serviceCollection.BuildServiceProvider();
-
+        
         var configuration = serviceProvider.GetService<IConfiguration>();
         var dbContext = serviceProvider.GetService<DatabaseContext>();
         var ticketSerializer = new TicketSerializer();
         var httpClient = new HttpClient();
         var memoryCache = serviceProvider.GetService<IMemoryCache>();
-
+        
         var azAdSection = configuration.GetSection(AppSettingsConstants.AzureAdSelection);
         var azureAdConfiguration = azAdSection.Get<AzureAdConfiguration>();
         var adClientSecret = Environment.GetEnvironmentVariable(AppSettingsConstants.AdSecretKey);
         azureAdConfiguration.ClientSecret = adClientSecret;
-
+        
         var ticketStore = new TicketStore(dbContext, ticketSerializer, httpClient, azureAdConfiguration, memoryCache);
-
+        
         serviceCollection.AddSingleton<ITicketStore, TicketStore>(_ => ticketStore);
         serviceCollection
             .AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -298,17 +297,17 @@ public static class TicketStoreDependencyInjection
     }
 }
 
-Далее в Program.cs вызываем метод расширения:
+Then we call the extension method in Program.cs:
 
 builder.Services.AddTicketStore();
 
-6. Повторяем шаг 1, на этот раз сервер должен сообщить что пользователь авторизован.
+6. Repeat step 1, this time the server should inform you that the user is authorized.
 
-7. Angular приложение отправляет запрос на эндпоинт https://localhost:4200/api/OtherApi1/products.
+7. Angular application sends request to endpoint https://localhost:4200/api/OtherApi1/products
 
-8. Библиотека YARP берет токен доступа из куки и кладет его в заголовок, после чего перенаправляет запрос на один из микросервисов.
+8. The YARP library takes the access token from the cookie and puts it in the header, then redirects the request to one of the microservices.
 
-Ниже метод расширения, конфигурирующий YARP:
+Below is the extension method that configures YARP:
 
 public static class YarpServices
 {
@@ -333,13 +332,13 @@ public static class YarpServices
     }
 }
 
-Вызываем метод расширения в Program.cs:
+Then we call the extension method in Program.cs:
 
 var reverseProxySection = builder.Configuration.GetSection(AppSettingsConstants.ReverseProxySelection);
 
 builder.Services.ConfigureYarp(reverseProxySection);
 
-Пример секции YARP в appsettings.json:
+Example reverse proxy (YARP) selection in appsettings.json:
 
 "ReverseProxy": {
     "Routes": {
@@ -366,4 +365,4 @@ builder.Services.ConfigureYarp(reverseProxySection);
     }
   }
 
-9. Если приходит код 401, повторяем флоу заного.
+9. If the code 401 comes, repeat the flow again.

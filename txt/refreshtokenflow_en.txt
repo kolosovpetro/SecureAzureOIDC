@@ -1,19 +1,20 @@
 ====Refresh token flow====
 
-Реализация обновления токенов пользователей крайне проста. Нам нужно создать фоновый сервис, который будет каждые несколько
-минут выбирать из базы данных те сессии, которые скоро истекут, затем фоновый сервис должен десериализовать объект
-AuthenticationTicket у каждой найденой найденой сессии, из десериализованного объекта сервис возьмет токен обновления и отправит
-запрос на сервер авторизации с целью получения новых токенов доступа и обновления. Новые токены заменяют старые в объекте AuthenticationTicket,
-после чего объект нужно заного десериализовать и установить уже десериализованный объект в свойство Value. Кроме того, в ответе
-сервера авторизации в поле ExpiresIn будет число, которое говорит о том через какое время (в секундах) истечет токен доступа, фоновый
-сервис должен обновить свойство ExpiresAt у объекта UserSessionEntity, добавив к текущему времени полученные секунды.
+The implementation of refreshing user tokens is extremely simple. We need to create a background service, which every few minutes 
+will select from the database those sessions that are about to expire, then the background service should deserialize 
+the AuthenticationTicket object of each found session, from the deserialized object the service will take the refresh token and 
+send a request to the authorization server in order to get new access tokens and refresh tokens. The new tokens replace the old tokens 
+in the AuthenticationTicket object, after which the object must be deserialized again and set the already deserialized object to 
+the Value property. In addition, the authentication server response will have a number in the ExpiresIn field that tells you in 
+how much time (in seconds) the access token will expire, the background service must update the ExpiresAt property of 
+the UserSessionEntity object by adding the seconds received to the current time.
 
-Помимо обновления пользовательских сессий, фоновый сервис отвечает за удалений сессий, которые долго не использовались.
-Каждые несколько минут выбираются сессии, их свойства DateOfLastAccess сравнивается с текущем временем, в случае если разница
-между двумя датами больше 3 суток - сессия удаляется. Каждый раз когда пользователь совершает действие на сайте, свойство
-DateOfLastAccess обновляется.
+In addition to refreshing user sessions, the background service is responsible for deleting sessions that have not been used for a long time. 
+Every few minutes, sessions are selected, their DateOfLastAccess property is compared to the current time, if the difference between 
+the two dates is more than 3 days - the session is deleted. Each time a user performs an action on the site, 
+the DateOfLastAccess property is updated.
 
-Реализация фонового сервиса:
+Implementation of a background service:
 
 public class RefreshBackgroundService : IHostedService
 {
@@ -53,13 +54,13 @@ public class RefreshBackgroundService : IHostedService
                 var differenceBetweenLastAccessAndUtcNow = userSession.DateOfLastAccess
                     .Subtract(DateTimeOffset.UtcNow)
                     .Duration();
-
+                
                 if (differenceBetweenLastAccessAndUtcNow > TimeSpan.FromDays(3))
                 {
                     await _ticketStore.RemoveAsync(userSession.Id.ToString());
                     continue;
                 }
-
+                
                 await _ticketStore.RenewAsync(userSession.Id.ToString(), null);
             }
 
@@ -68,21 +69,21 @@ public class RefreshBackgroundService : IHostedService
     }
 }
 
-Метод расширения, конфигурирующий фоновый сервис:
+The extension method that configures a background service:
 
 public static class HostedServicesDependencyInjection
 {
     public static IServiceCollection AddHostedServices(this IServiceCollection serviceCollection)
     {
         var serviceProvider = serviceCollection.BuildServiceProvider();
-
+        
         var configuration = serviceProvider.GetService<IConfiguration>();
         var databaseContext = serviceProvider.GetService<DatabaseContext>();
         var memoryCache = serviceProvider.GetService<IMemoryCache>();
-
+        
         var tickerSerializer = new TicketSerializer();
         var httpClient = new HttpClient();
-
+        
         var azAdSection = configuration.GetSection(AppSettingsConstants.AzureAdSelection);
         var azureAdConfiguration = azAdSection.Get<AzureAdConfiguration>();
         var adClientSecret = Environment.GetEnvironmentVariable(AppSettingsConstants.AdSecretKey);
@@ -98,11 +99,11 @@ public static class HostedServicesDependencyInjection
         var refreshBackgroundService = new RefreshBackgroundService(databaseContext, tickerStore);
 
         serviceCollection.AddHostedService(_ => refreshBackgroundService);
-
+        
         return serviceCollection;
     }
 }
 
-Вызов метода расширения в Program.cs:
+Calling the extension method in Program.cs:
 
 builder.Services.AddHostedServices();
