@@ -1,64 +1,76 @@
 ====Definition of OpenId Connect====
 
-OpenId Connect is a simple identity layer on top of the OAuth 2.0 protocol. It enables Clients to verify the identity of the End-User based on 
-the authentication performed by an Authorization Server, as well as to obtain basic profile information about the End-User in an interoperable and REST-like manner. 
+OpenId Connect is a simple identity layer on top of the OAuth 2.0 protocol.
+It enables Clients to verify the identity of the End-User based on  the authentication performed by an Authorization Server,
+as well as to obtain basic profile information about the End-User in an interoperable and REST-like manner.
 
 ====How OIDC related to OAuth 2.0====
 
-OAuth 2.0 is a protocol that enables a third-party application to obtain limited access to an HTTP service, either on behalf of a resource owner 
-by orchestrating an approval interaction between the resource owner and the HTTP service, or by allowing the third-party application to obtain access on its own 
-behalf.
+OAuth 2.0 is a protocol that enables a third-party application to obtain limited access to an HTTP service,
+either on behalf of a resource owner by orchestrating an approval interaction between the resource owner
+and the HTTP service, or by allowing the third-party application to obtain access on its own behalf.
 
-OAuth 2.0 provides various standardized message flows based on JSON and HTTP; OpenID Connect uses them to provide identity services.
+OAuth 2.0 provides various standardized message flows based on JSON and HTTP;
+OpenID Connect uses them to provide identity services.
 
 ====What problems solve OAuth 2.0 and what are benefits of OAuth in compare of Basic authorization====
 
-In the traditional client-server authentication model, the client requests an access-restricted resource (protected resource) on the
-server by authenticating with the server using the resource owner's credentials. In order to provide third-party applications access to
-restricted resources, the resource owner shares its credentials with the third party. This creates several problems and limitations:
+In the traditional client-server authentication model, the client requests an access-restricted resource (protected resource)
+on the server by authenticating with the server using the resource owner's credentials.
+In order to provide third-party applications access to restricted resources,
+the resource owner shares its credentials with the third party.
+This creates several problems and limitations:
 
-1. Third-party applications are required to store the resource owner's credentials for future use, typically a password in clear-text.
+1. Third-party applications are required to store the resource owner's credentials for future use, typically
+a password in clear-text.
 
 2. Servers are required to support password authentication, despite the security weaknesses inherent in passwords.
 
-3. Third-party applications gain overly broad access to the resource owner's protected resources, leaving resource owners without any ability to 
-restrict duration or access to a limited subset of resources.
+3. Third-party applications gain overly broad access to the resource owner's protected resources,
+leaving resource owners without any ability to restrict duration or access to a limited subset of resources.
 
-4. Resource owners cannot revoke access to an individual third party without revoking access to all third parties, and must do so by changing 
-the third party's password.
+4. Resource owners cannot revoke access to an individual third party without revoking access to all third parties,
+and must do so by changing the third party's password.
 
-5. Compromise of any third-party application results in compromise of the end-user's password and all the data protected by that password.
+5. Compromise of any third-party application results in compromise of the end-user's password
+and all the data protected by that password.
 
-OAuth addresses these issues by introducing an authorization layer and separating the role of the client from that of the resource owner. 
+OAuth addresses these issues by introducing an authorization layer and separating the role of the client
+from that of the resource owner.
 In OAuth, the client requests access to resources controlled by the resource owner and hosted by the resource server.
-Instead of using the resource owner's credentials to access protected resources, the client obtains an access token
+Instead of using the resource owner's credentials to access protected resources, the client obtains an access token.
 
 ====Explain the diagram OAuthPkceScheme_1570_1055====
 
-1. After clicking on the "Sign in with Google" button, you are redirected to the authorization endpoint, where the resource owner must enter his 
-credentials, as well as agree to some conditions. Particular attention should be paid to code_challenge and code_challenge_method, the first is some string
-that will be encoded using the encoding method specified in the code_challenge_method request parameter. In the future, when exchanging the received code 
-for an access and refresh token, we will have to present the code_verifier value, which is equal to the previously coded code_challenge.
+1. After clicking on the "Sign in with Google" button,
+the browser is redirected to the authorization endpoint, where the resource owner (user) enters credentials e.g. login and password.
 
-2. After successful authentication, it will redirect to redirect_uri.
-As for the request parameters code and state:
+2. After successful authentication the browser is redirect to redirect_uri defined in OAuth provider settings.
+Code parameter is attached to the request parameters.
 
-Code is an authorization code that is obtained through an authorization server and mediates between clients and resource owners.
-Before the authorization server redirects the resource owner back to the client, the authorization server verifies the authenticity of the resource owner.
-So because the resource owner only authenticates with the authorization server, their credentials are never sent to the client.
+3. Having the code value application exchanges it to a pair of access and refresh tokens.
+Provided that we used PKCE with specified code_challenge and code_challenge_method values exchanging code to a pair of tokens
+we must pass the value of code_verifier to the request.
 
-State is the value used by the client to store the state between the authorization request and the callback. 
+We mention here such definitions as code and state and they means
+
+Code is an authorization code that is obtained through an authorization
+server and mediates between clients and resource owners.
+Before the authorization server redirects the resource owner back to the client,
+the authorization server verifies the authenticity of the resource owner.
+So because the resource owner only authenticates with the authorization server,
+their credentials are never sent to the client.
+
+State is the value used by the client to store the state between the authorization request and the callback.
 The authorization server enables this value when redirecting the user agent back to the client.
 This parameter is used to prevent Cross-Site Request Forgery (CSRF) attacks.
-
-3. After receiving the authorization code, this code is exchanged for access and update tokens. If earlier, when redirecting the resource owner to 
-the authorization endpoint, we specified code_challenge and code_challenge_method, now, when exchanging code for tokens, we must pass the value of code_verifier
-in the request.
 
 ====What is Proof of Key Code Exchange (PKCE) and what vulnerability it solves?====
 
 Authorization code flow with PKCE is a protocol that represents a client generated secret that can be verified by an authorization server.
 This secret is called code_verifier. The client hashes the code_verifier value and writes it to the code_challenge parameter.
-PKCE solves the problem of secure code exchange. If an attacker manages to get an authorization code, then he will not be able to exchange it for 
-access and refresh tokens. In this way, we ensure that the exchange of code for tokens produces the same application that performed the authentication.
-In a way, PKCE can be compared to the digital signature of an authentication process. When exchanging an authorization code for tokens, you must specify the code_verifier.
+PKCE solves the problem of secure code exchange.
+If an attacker manages to get an authorization code, then he will not be able to exchange it for access and refresh tokens.
+In this way, we ensure that the exchange of code for tokens produces the same application that performed the authentication.
+In a way, PKCE can be compared to the digital signature of an authentication process.
+When exchanging an authorization code for tokens, you must specify the code_verifier.
