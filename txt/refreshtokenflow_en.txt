@@ -1,18 +1,17 @@
 ====Refresh token flow====
 
-The implementation of refreshing user tokens is extremely simple. We need to create a background service, which every few minutes 
-will select from the database those sessions that are about to expire, then the background service should deserialize 
-the AuthenticationTicket object of each found session, from the deserialized object the service will take the refresh token and 
-send a request to the authorization server in order to get new access tokens and refresh tokens. The new tokens replace the old tokens 
-in the AuthenticationTicket object, after which the object must be deserialized again and set the already deserialized object to 
-the Value property. In addition, the authentication server response will have a number in the ExpiresIn field that tells you in 
-how much time (in seconds) the access token will expire, the background service must update the ExpiresAt property of 
-the UserSessionEntity object by adding the seconds received to the current time.
+The implementation of refreshing user tokens is extremely simple.
+It is necessary to create a background service that manages sessions,
+in particular deletes sessions that has not been used long time, refreshes existing sessions etc.
+In case of refresh or initial authentication, the new AuthenticationTicket object replaces the existing or new instance is created.
+In addition, the Azure AD authentication server's response contains a timestamp property ExpiresIn that determines session's lifetime,
+the background service updates the ExpiresAt property of the UserSessionEntity accordingly.
 
-In addition to refreshing user sessions, the background service is responsible for deleting sessions that have not been used for a long time. 
-Every few minutes, sessions are selected, their DateOfLastAccess property is compared to the current time, if the difference between 
-the two dates is more than 3 days - the session is deleted. Each time a user performs an action on the site, 
-the DateOfLastAccess property is updated.
+The background service is responsible not only for refreshing sessions,
+but also it is responsible for deleting sessions that have not been used for a long time.
+Once per predefined period, the sessions are selected and their DateOfLastAccess property is compared to the current DateTime.
+If the difference between the DateOfLastAccess and DateTime.Now is more than, for example 3 days, then session is deleted.
+Each time a user performs an action on the site, the DateOfLastAccess property is updated.
 
 Implementation of a background service:
 

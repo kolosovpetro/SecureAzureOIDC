@@ -1,0 +1,17 @@
+The implementation of refreshing user tokens is extremely simple.
+It is necessary to create a background service~\cite{microsoftHostedservice2023} that manages sessions,
+in particular deletes sessions that has not been used long time, refreshes existing sessions etc.
+In case of refresh or initial authentication, the new \texttt{AuthenticationTicket} object~\cite{microsoftAuthenticationTicket2023}
+replaces the existing or new instance is created.
+In addition, the Azure AD authentication server's response contains a timestamp property \texttt{ExpiresIn}
+that determines lifetime of the tokens,
+the background service updates the \texttt{ExpiresAt} property of the \texttt{UserSessionEntity} accordingly.
+
+The background service is responsible not only for refreshing the sessions,
+but also it is responsible for deleting the sessions that have not been used for a long time.
+Once per predefined period, the sessions are selected and their \texttt{DateOfLastAccess} property is
+compared to the current \texttt{DateTime.Now}.
+If the difference between the \texttt{DateOfLastAccess} and \texttt{DateTime.Now} is more than, for example 3 days,
+then session is deleted.
+Each time a user performs an action on the site, the \texttt{DateOfLastAccess} property is updated.
+Implementation of a background service can be done as per references~\cite{backroundService_2023, configurationBackgroundService_2023}
