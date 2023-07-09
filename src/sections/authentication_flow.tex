@@ -48,7 +48,8 @@ Therefore, the whole authentication process can be described as eight steps such
     Authentication cookies are being setup at this step.
     \item Step 1 is repeated here, but now the HTTP request is for sure to be with \texttt{200 (OK)} status code.
     \item Precompiled Angular frontend application now sends request to the another microservice with authentication cookies
-    attached to the request's \texttt{Bearer} header using YARP library~\cite{microsoftYarp2021, yarpSectionAppSettings_2023},
+    attached to the request's \texttt{Bearer} header using \texttt{YARP} library~\cite{microsoftYarp2021, yarpSectionAppSettings_2023},
     so that microservice is accessible.
+    The \texttt{YARP} is configured according to~\cite{yarpSectionAppSettings_2023}
     \item If previous step returns \texttt{401 (Unauthorized)} status code, then Step 1 is repeated
 \end{enumerate}
