@@ -24,9 +24,11 @@ serviceCollection
     });
 
 5. If the authentication server has successfully authenticated the user, he is redirected to the endpoint https://localhost:4200, with 
-cookies already set. At this point, the TickerStore comes into play, which is all about managing user sessions. In the database, each 
-session is stored as a UserSessionEntity entity. The Value property of byte[] type contains serialized AuthenticationTicket object, 
-which contains refresh token (as well as access token and user ID, which is our Id property).
+cookies already set.
+At this point, the TickerStore comes into play, which is all about managing user sessions.
+Each session is stored as a UserSessionEntity entity in the database.
+The Value property of type byte[] contains serialized AuthenticationTicket object such that
+contains all required information like access, ID and refresh tokens.
 
 public class UserSessionEntity
 {
@@ -38,7 +40,7 @@ public class UserSessionEntity
     public byte[] Value { get; set; }
 }
 
-TickerStore implements ITickerStore interface, which offers 4 methods: StoreAsync, RenewAsync, RetrieveAsync, RemoveAsync.
+TickerStore implements ITickerStore interface that offers 4 methods: StoreAsync, RenewAsync, RetrieveAsync, RemoveAsync.
 
 The StoreAsync method is executed immediately after authentication on the authentication server, it saves the user session in the database.
 The RenewAsync method in our case is used by the background service RefreshBackgroundService to update user sessions.

@@ -7,7 +7,7 @@ let be the following authentication flow as per diagram below
     ~\caption{Authentication flow diagram.}\label{fig:authentication_flow_diagram}
 \end{figure}
 
-Therefore, the whole authentication process can be described as nine steps such that
+Therefore, the whole authentication process can be described as eight steps such that
 \begin{enumerate}
     \item Compiled Angular frontend application sends request to the authentication endpoint of the ASP .NET Core API
     to verify current authentication state.
@@ -19,13 +19,40 @@ Therefore, the whole authentication process can be described as nine steps such 
     then browser is redirected to the \texttt{login} endpoint of the ASP .NET Core API,
     otherwise user gets access to the protected resources
     \item Login method of the ASP .NET Core API redirects browser to the Azure AD authorize url
-    \texttt{login.microsoftonline.com/tenant/oauth2/v2.0/authorize} where user enters his credentials
-    \item After successful login on the Azure AD side, the browser is redirected to the \texttt{fallback\_url}
+    \texttt{login.microsoftonline.com/tenant/oauth2/v2.0/authorize} where user enters his credentials.
+    It is important to clarify that in order to get ID token we have to put parameter \texttt{openid} to the scope
+    \input{code_snippets/02_openidconnect_add_scope_openid}
+    \item After successful authentication on the Azure AD side, the browser is redirected to the \texttt{fallback\_url}
     that is defined in Azure AD application registration.
-    This \texttt{fallback\_url} is an active endpoint of the ASP .NET Core API.
+    This \texttt{fallback\_url} is an active endpoint of the ASP .NET Core API\@.
+    At this point, the \texttt{TickerStore}~\cite{microsoftIticketstore2023, ticketStore_2023}
+    comes into the flow to manage user sessions.
+    Each session is stored as a \texttt{UserSessionEntity} entity in the database.
+    \input{code_snippets/03_user_session_entity}
+    The Value property of type \texttt{byte[]} contains serialized \texttt{AuthenticationTicket}~\cite{microsoftAuthenticationTicket2023}
+    object such that contains all required information like access, ID and refresh tokens.
+    The class \texttt{TickerStore} implements \texttt{ITickerStore} interface that offers 4 methods:
+    \texttt{StoreAsync, RenewAsync, RetrieveAsync, RemoveAsync}.
+    \begin{itemize}
+        \item The \texttt{StoreAsync} method is executed immediately after authentication on the authentication server,
+        it saves the user session to the database.
+        \item The \texttt{RenewAsync} method in our case is used by the background service to update user sessions.
+        \item The \texttt{RetrieveAsync} method is executed every time a request is sent to the endpoint marked with the
+        \texttt{[Authorize]} attribute.
+        \item The \texttt{RemoveAsync} method is executed when the browser cookie has expired,
+        as well as is used by the same \texttt{RefreshBackgroundService}
+        to remove sessions which have not been used for a long time.
+    \end{itemize}
+    Example TickerStore implementation can be found at~\cite{ticketStore_2023}.
+%    The StoreAsync method is executed immediately after authentication on the authentication server, it saves the user session in the database.
+%    The RenewAsync method in our case is used by the background service RefreshBackgroundService to update user sessions.
+%    The RetrieveAsync method is executed every time a request is sent to the endpoint marked with the [Authorize] attribute.
+%    The RemoveAsync method is executed when the browser cookie has expired, as well as is used by the same RefreshBackgroundService
+%    to remove sessions which have not been used for a long time.
     Authentication cookies are being setup at this step.
     \item Step 1 is repeated here, but now the HTTP request is for sure to be with \texttt{200 (OK)} status code.
     \item Precompiled Angular frontend application now sends request to the another microservice with authentication cookies
-    attached to the request's \texttt{Bearer} header using YARP library, so that microservice is accessible.
+    attached to the request's \texttt{Bearer} header using YARP library~\cite{microsoftYarp2021, yarpSectionAppSettings_2023},
+    so that microservice is accessible.
     \item If previous step returns \texttt{401 (Unauthorized)} status code, then Step 1 is repeated
 \end{enumerate}
