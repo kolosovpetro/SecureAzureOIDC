@@ -43,12 +43,8 @@ Therefore, the whole authentication process can be described as eight steps such
         as well as is used by the same \texttt{RefreshBackgroundService}
         to remove sessions which have not been used for a long time.
     \end{itemize}
-    Example TickerStore implementation can be found at~\cite{ticketStore_2023}.
-%    The StoreAsync method is executed immediately after authentication on the authentication server, it saves the user session in the database.
-%    The RenewAsync method in our case is used by the background service RefreshBackgroundService to update user sessions.
-%    The RetrieveAsync method is executed every time a request is sent to the endpoint marked with the [Authorize] attribute.
-%    The RemoveAsync method is executed when the browser cookie has expired, as well as is used by the same RefreshBackgroundService
-%    to remove sessions which have not been used for a long time.
+    Example \texttt{TicketStore} implementation can be found at~\cite{ticketStore_2023}.
+    Example of \texttt{TicketStore} dependency injection can be found at~\cite{ticketStoreDI_2023}.
     Authentication cookies are being setup at this step.
     \item Step 1 is repeated here, but now the HTTP request is for sure to be with \texttt{200 (OK)} status code.
     \item Precompiled Angular frontend application now sends request to the another microservice with authentication cookies
