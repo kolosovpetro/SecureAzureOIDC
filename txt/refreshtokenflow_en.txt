@@ -1,0 +1,108 @@
+====Refresh token flow====
+
+The implementation of refreshing user tokens is extremely simple.
+It is necessary to create a background service that manages sessions,
+in particular deletes sessions that has not been used long time, refreshes existing sessions etc.
+In case of refresh or initial authentication, the new AuthenticationTicket object replaces the existing or new instance is created.
+In addition, the Azure AD authentication server's response contains a timestamp property ExpiresIn that determines session's lifetime,
+the background service updates the ExpiresAt property of the UserSessionEntity accordingly.
+
+The background service is responsible not only for refreshing sessions,
+but also it is responsible for deleting sessions that have not been used for a long time.
+Once per predefined period, the sessions are selected and their DateOfLastAccess property is compared to the current DateTime.
+If the difference between the DateOfLastAccess and DateTime.Now is more than, for example 3 days, then session is deleted.
+Each time a user performs an action on the site, the DateOfLastAccess property is updated.
+
+Implementation of a background service:
+
+public class RefreshBackgroundService : IHostedService
+{
+    private readonly DatabaseContext _context;
+    private readonly TicketStore _ticketStore;
+
+    public RefreshBackgroundService(DatabaseContext context, TicketStore ticketStore)
+    {
+        _context = context;
+        _ticketStore = ticketStore;
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        var _ = StartRefreshingUserSessionsAsync(cancellationToken);
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    private async Task StartRefreshingUserSessionsAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var expiringUserSessions = await _context.UserSessions
+                .Where(x => (x.ExpiresAt > DateTimeOffset.UtcNow &&
+                             x.ExpiresAt < DateTimeOffset.UtcNow.AddMinutes(5)) ||
+                            x.ExpiresAt < DateTimeOffset.UtcNow)
+                .ToListAsync(cancellationToken);
+
+            foreach (var userSession in expiringUserSessions)
+            {
+                var differenceBetweenLastAccessAndUtcNow = userSession.DateOfLastAccess
+                    .Subtract(DateTimeOffset.UtcNow)
+                    .Duration();
+                
+                if (differenceBetweenLastAccessAndUtcNow > TimeSpan.FromDays(3))
+                {
+                    await _ticketStore.RemoveAsync(userSession.Id.ToString());
+                    continue;
+                }
+                
+                await _ticketStore.RenewAsync(userSession.Id.ToString(), null);
+            }
+
+            await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+        }
+    }
+}
+
+The extension method that configures a background service:
+
+public static class HostedServicesDependencyInjection
+{
+    public static IServiceCollection AddHostedServices(this IServiceCollection serviceCollection)
+    {
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        
+        var configuration = serviceProvider.GetService<IConfiguration>();
+        var databaseContext = serviceProvider.GetService<DatabaseContext>();
+        var memoryCache = serviceProvider.GetService<IMemoryCache>();
+        
+        var tickerSerializer = new TicketSerializer();
+        var httpClient = new HttpClient();
+        
+        var azAdSection = configuration.GetSection(AppSettingsConstants.AzureAdSelection);
+        var azureAdConfiguration = azAdSection.Get<AzureAdConfiguration>();
+        var adClientSecret = Environment.GetEnvironmentVariable(AppSettingsConstants.AdSecretKey);
+        azureAdConfiguration.ClientSecret = adClientSecret;
+
+        var tickerStore = new TicketStore(
+            databaseContext,
+            tickerSerializer,
+            httpClient,
+            azureAdConfiguration,
+            memoryCache);
+
+        var refreshBackgroundService = new RefreshBackgroundService(databaseContext, tickerStore);
+
+        serviceCollection.AddHostedService(_ => refreshBackgroundService);
+        
+        return serviceCollection;
+    }
+}
+
+Calling the extension method in Program.cs:
+
+builder.Services.AddHostedServices();
