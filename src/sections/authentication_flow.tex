@@ -1,35 +1,35 @@
 Consider a more practical approach that takes all the previously discussed aspects.
-Applying modern frameworks like ASP .NET Core, Angular etc.
-let be the following authentication flow as per diagram below
+Applying modern frameworks like ASP .NET Core, Angular, etc.
+let be the following authentication flow as per the diagram below
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{img/Auth_flow_updated}
-    ~\caption{Authentication flow diagram.}\label{fig:authentication_flow_diagram}
+    ~\caption{Authentication flow diagram.}
 \end{figure}
 
 Therefore, the whole authentication process can be described as eight steps such that
 \begin{enumerate}
-    \item Compiled Angular frontend application sends request to the authentication endpoint of the ASP .NET Core API
-    to verify current authentication state.
+    \item Compiled Angular frontend application sends a request to the authentication endpoint of the ASP .NET Core API
+    to verify the current authentication state.
     Angular application is a set of precompiled bundles that are exposed via same ASP .NET Core API at the \texttt{/app}
     endpoint so that cross-origin requests are not necessary and tokens can be stored in cookie files securely
     \item Authentication endpoint of the ASP .NET Core API responses either with
     HTTP status code \texttt{200 (OK)} or \texttt{401 (Unauthorized)}
-    \item If \texttt{401 (Unauthorized)} status code received from previous step,
+    \item If \texttt{401 (Unauthorized)} status code received from the previous step,
     then browser is redirected to the \texttt{login} endpoint of the ASP .NET Core API,
     otherwise user gets access to the protected resources
     \item Login method of the ASP .NET Core API redirects browser to the Azure AD authorize url
     \texttt{login.microsoftonline.com/tenant/oauth2/v2.0/authorize} where user enters his credentials.
-    It is important to clarify that in order to get ID token we have to put parameter \texttt{openid} to the scope
+    It is important to clarify that in order to get ID token, we have to put parameter \texttt{openid} to the scope
     \input{code_snippets/02_openidconnect_add_scope_openid}
-    \item After successful authentication on the Azure AD side, the browser is redirected to the \texttt{fallback\_url}
+    \item After successful authentication on the Azure AD side; the browser is redirected to the \texttt{fallback\_url}
     that is defined in Azure AD application registration.
     This \texttt{fallback\_url} is an active endpoint of the ASP .NET Core API\@.
     At this point, the \texttt{TickerStore}~\cite{microsoftIticketstore2023, ticketStore_2023}
     comes into the flow to manage user sessions.
     Each session is stored as a \texttt{UserSessionEntity} entity in the database.
     \input{code_snippets/03_user_session_entity}
-    The Value property of type \texttt{byte[]} contains serialized \texttt{AuthenticationTicket}~\cite{microsoftAuthenticationTicket2023}
+    The Value property of type \texttt{byte[]} contains a serialized \texttt{AuthenticationTicket}~\cite{microsoftAuthenticationTicket2023}
     object such that contains all required information like access, ID and refresh tokens.
     The class \texttt{TickerStore} implements \texttt{ITickerStore} interface that offers 4 methods:
     \texttt{StoreAsync, RenewAsync, RetrieveAsync, RemoveAsync}.
@@ -47,9 +47,9 @@ Therefore, the whole authentication process can be described as eight steps such
     Example of \texttt{TicketStore} dependency injection can be found at~\cite{ticketStoreDI_2023}.
     Authentication cookies are being setup at this step.
     \item Step 1 is repeated here, but now the HTTP request is for sure to be with \texttt{200 (OK)} status code.
-    \item Precompiled Angular frontend application now sends request to the another microservice with authentication cookies
+    \item Precompiled Angular frontend application now sends a request to another microservice with authentication cookies
     attached to the request's \texttt{Bearer} header using \texttt{YARP} library~\cite{microsoftYarp2021},
     so that microservice is accessible.
     The \texttt{YARP} is configured according to~\cite{yarpDI_2023,yarpSectionAppSettings_2023}.
-    \item If previous step returns \texttt{401 (Unauthorized)} status code, then Step 1 is repeated
+    \item If a previous step returns \texttt{401 (Unauthorized)} status code, then Step 1 is repeated
 \end{enumerate}

@@ -1,6 +1,6 @@
-In this manuscript we explore the problem of secure storage and transfer of access tokens between microservices.
+In this manuscript, we explore the problem of secure storage and transfer of access tokens between microservices.
 Particular attention was paid to possible vulnerabilities during transfer of access tokens such
-as Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF).
+as Cross-Site Scripting and Cross-Site Request Forgery.
 
 To eliminate these vulnerabilities, it is necessary to store authorization tokens in cookies with mandatory
 \texttt{HttpOnly} and \texttt{SameSite} settings such that \texttt{SameSite} values should be \texttt{Lax} or \texttt{Strict}.
@@ -12,7 +12,7 @@ The main principle of the OIDC protocol is described more detailed in Chapter 2.
 
 Also, we provide an authentication / authorization implementation based on the ASP.NET Core Web API backend and Angular
 frontend application.
-These applications are stored under the single domain to eliminate necessity to transfer authorization cookies cross domain way.
+These applications are stored under the single domain to eliminate the necessity to transfer authorization cookies cross domain way.
 Transfer of access tokens between microservices is implemented using Reverse Proxy YARP~\cite{microsoftYarp2021} so that
 the access token is automatically substituted in the request header.
 
